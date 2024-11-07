@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helmet and Vehicle Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+        #video {
+            width: 800px;
+            height: auto;
+            border: 2px solid #333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        #result {
+            font-size: 1.2em;
+            margin-top: 10px;
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Helmet and Vehicle Detection</h1>
+    <video id="video" autoplay></video>
+    <button onclick="startAutoCapture()">Start Auto Capture</button>
+    <button onclick="stopAutoCapture()">Stop Auto Capture</button>
+    <div id="result">Prediction will appear here...</div>
+
+    <script>
+        // เริ่มต้นเปิดกล้อง
+        const video = document.getElementById('video');
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Error accessing webcam: ", error);
+                document.getElementById('result').innerText = "Cannot access webcam. Please allow access.";
+            });
+
+        let autoCaptureInterval;
+
+        // ฟังก์ชันในการจับภาพและส่งไปยังเซิร์ฟเวอร์
+        function captureAndPredict() {
+            // สร้าง canvas สำหรับแปลงภาพจากวิดีโอ
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // แปลงภาพใน canvas ให้เป็น base64
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            // ส่งภาพไปยัง Flask API
+            fetch('http://localhost:5000/upload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'image': imageData
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server response was not OK');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // แสดงผลลัพธ์ที่ได้รับจากเซิร์ฟเวอร์
+                document.getElementById('result').innerText = 
+                    `Vehicle: ${data.vehicle_result}\nHelmet: ${data.helmet_result}`;
+            })
+            .catch(error => {
+                console.error("Error during prediction: ", error);
+                document.getElementById('result').innerText = "Prediction failed.";
+            });
+        }
+
+        // ฟังก์ชันเริ่มการถ่ายอัตโนมัติ
+        function startAutoCapture() {
+            if (!autoCaptureInterval) {
+                autoCaptureInterval = setInterval(captureAndPredict, 5000); // ถ่ายภาพทุก 5 วินาที
+                document.getElementById('result').innerText = "Auto capture started...";
+            }
+        }
+
+        // ฟังก์ชันหยุดการถ่ายอัตโนมัติ
+        function stopAutoCapture() {
+            if (autoCaptureInterval) {
+                clearInterval(autoCaptureInterval);
+                autoCaptureInterval = null;
+                document.getElementById('result').innerText = "Auto capture stopped.";
+            }
+        }
+    </script>
+</body>
+</html>

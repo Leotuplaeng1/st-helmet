@@ -1,5 +1,8 @@
-streamlit
+Flask
+Flask-CORS
+onnx
+onnxruntime
 numpy
-tensorflow
-Pillow
 requests
+Pillow
+paho-mqtt

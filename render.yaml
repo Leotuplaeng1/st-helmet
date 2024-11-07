@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: my-flask-app
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: MQTT_BROKER
+        value: "a2c612b479f9426a8cf0ce535dc46ef3.s1.eu.hivemq.cloud"
+      - key: MQTT_PORT
+        value: "8883"
+      - key: MQTT_USERNAME
+        value: "python"
+      - key: MQTT_PASSWORD
+        value: "0882501531Za"
